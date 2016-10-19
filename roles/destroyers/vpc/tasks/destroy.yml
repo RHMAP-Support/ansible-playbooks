@@ -1,0 +1,38 @@
+- name: get all subnets
+  ec2_vpc_subnet_facts:
+    filters:
+      vpc-id: "{{ vpc.id }}"
+    region: "{{ ec2_region }}"
+  register: subnet_facts
+
+- name: destroy all subnets
+  ec2_vpc_subnet:
+    state: absent
+    vpc_id: "{{ vpc.id }}"
+    cidr: "{{ item.cidr_block }}"
+    region: "{{ ec2_region }}"
+  with_items: "{{ subnet_facts.subnets }}"
+
+- name: destroy master security group
+  ec2_group:
+    state: absent
+    name: "masters"
+    description: ""
+    vpc_id: "{{ vpc.id }}"
+    region: "{{ ec2_region }}"
+
+- name: destroy nodes security group
+  ec2_group:
+    state: absent
+    name: "nodes"
+    description: ""
+    vpc_id: "{{ vpc.id }}"
+    region: "{{ ec2_region }}"
+
+- name: destroy ec2 vpc
+  ec2_vpc:
+    state: absent
+    vpc_id: "{{ vpc.id }}"
+    resource_tags: "{{ vpc.tags }}"
+    wait: yes
+    region: "{{ ec2_region }}"

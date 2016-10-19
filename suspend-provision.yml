@@ -1,0 +1,22 @@
+- name: Suspend Provision
+  hosts: localhost
+  connection: local
+
+  vars:
+    provision_id: "{{ hostvars[groups.AWS[0]].provision_id }}"
+    ec2_region: "{{ hostvars[groups.AWS[0]].ec2_region }}"
+
+  tasks:
+    - name: Gather ec2 remote facts
+      ec2_remote_facts:
+        filters:
+          "tag:provision_id": "{{ provision_id }}"
+        region: "{{ ec2_region }}"
+      register: ec2_facts
+
+    - name: suspend ec2 instances
+      ec2:
+        instance_ids: "{{ item.id }}"
+        state: stopped
+        region: "{{ ec2_region }}"
+      with_items: "{{ ec2_facts.instances }}"

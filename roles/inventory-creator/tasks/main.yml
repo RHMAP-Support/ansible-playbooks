@@ -1,0 +1,65 @@
+- name: generate password hash
+  command: >
+    openssl passwd -apr1 {{ rh_pass }}
+  register: pass_output
+
+- name: generate uuid
+  command: uuidgen
+  register: uuid
+
+- name: make tmp group_vars directorie
+  file: "path=/tmp/{{ uuid.stdout }}/group_vars state=directory"
+- name: make tmp host_vars directorie
+  file: "path=/tmp/{{ uuid.stdout }}/host_vars state=directory"
+
+- name: generate inventory
+  template: 
+    src: "{{ role_path }}/files/hosts"
+    dest: "/tmp/{{ uuid.stdout }}/hosts"
+
+- name: generate OSEv3 group vars
+  template: 
+    src: "{{ role_path }}/files/group_vars/OSEv3.yml"
+    dest: "/tmp/{{ uuid.stdout }}/group_vars/OSEv3.yml"
+
+- name: generate AWS group vars
+  template: 
+    src: "{{ role_path }}/files/group_vars/AWS.yml"
+    dest: "/tmp/{{ uuid.stdout }}/group_vars/AWS.yml"
+
+- name: generate host vars
+  template: 
+    src: "{{ role_path }}/files/host_vars.yml"
+    dest: "/tmp/{{ uuid.stdout }}/host_vars/{{ hostvars[item].public_dns_name }}.yml"
+  with_inventory_hostnames: nodes
+
+- name: archive inventory
+  command: >
+    tar -C /tmp/{{ uuid.stdout }} -zcvf /tmp/{{ uuid.stdout }}.tar.gz .
+  args:
+    warn: no #this warning does not apply
+
+- name: base64 encode archive
+  command: >
+    base64 -w 0 /tmp/{{ uuid.stdout }}.tar.gz
+  when: callback is defined
+  register: base64
+
+- name: fire callback
+  uri: 
+    url: "{{ callback }}"
+    method: "POST"
+    body: 
+      host_config_key: "{{ host_config_key | default(omit) }}"
+      extra_vars:
+        contents: "{{ base64.stdout }}"
+        name: "{{ provision_id }}"
+    body_format: json
+    status_code: "200,201"
+  when: callback is defined
+
+- name: cleanup tmp directory
+  file: "path=/tmp/{{ uuid.stdout }} state=absent"
+
+- name: cleanup tmp archive
+  file: "path=/tmp/{{ uuid.stdout }}.tar.gz state=absent"

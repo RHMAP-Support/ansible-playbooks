@@ -1,0 +1,11 @@
+- name: gather vpc remote facts
+  ec2_vpc_net_facts:
+    filters:
+      "tag:provision_id": "{{ provision_id }}"
+    region: "{{ ec2_region }}"
+  register: vpc_facts
+
+- include: destroy.yml
+  with_items: "{{ vpc_facts.vpcs }}"
+  loop_control:
+    loop_var: vpc

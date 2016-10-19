@@ -1,0 +1,10 @@
+- name: Create Tower Inventory
+  hosts: localhost
+  connection: local
+
+  tasks:
+    - name: destroy inventory
+      command: >
+        tower-cli inventory delete -n {{ name }} --organization {{ tower_org }}
+        -u {{ tower_user }} -p {{ tower_pass }} -f json
+      register: inventory_output

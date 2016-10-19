@@ -1,0 +1,57 @@
+---
+  - name: create ec2 instance
+    ec2:
+      key_name: "{{ ec2_key_name }}"
+      instance_type: "{{ node.size }}"
+      image: "{{ ami_find.results[0].ami_id }}"
+      group: "{{ node.groups }}"
+      vpc_subnet_id: "{{ node.subnet.id }}"
+      volumes:
+        - device_name: /dev/sda1
+          volume_size: 50
+          delete_on_termination: yes
+      instance_tags:
+        Name: "{{ node.name }}"
+        provision_id: "{{ provision_id }}"
+      count_tag: 
+        Name: "{{ node.name }}"
+        provision_id: "{{ provision_id }}"
+      exact_count: 1
+      region: "{{ ec2_region }}"
+      wait: yes
+    register: ec2
+
+  - name: create elastic ip
+    ec2_eip:
+      device_id: "{{ ec2.tagged_instances[0].id }}"
+      region: "{{ ec2_region }}"
+      reuse_existing_ip_allowed: yes
+      release_on_disassociation: yes
+      in_vpc: yes
+    register: eip
+    until: eip|success
+    retries: 3
+    delay: 30
+    
+  - name: get ec2 remote facts
+    ec2_remote_facts:
+      filters:
+        "instance-state-name": "running"
+        "tag:Name": "{{ node.name }}"
+      region: "{{ ec2_region }}"
+    register: ec2_facts
+
+  - name: Add new host
+    add_host: 
+      name: "{{ ec2_facts.instances[0].public_dns_name }}"
+      id: "{{ ec2_facts.instances[0].id }}"
+      groups: "rhel,openshift,aws,{{ node.groups | join(',') }},{{ node.type }}"
+      subnet_id: "{{ node.subnet.id }}"
+      public_ip_address: "{{ eip.public_ip }}" 
+      private_ip_address: "{{ ec2_facts.instances[0].private_ip_address }}"
+      public_dns_name: "{{ ec2_facts.instances[0].public_dns_name }}" 
+      private_dns_name: "{{ ec2_facts.instances[0].private_dns_name }}"
+      openshift_scheduleable: "{{ node.scheduleable | default('yes') }}"
+      openshift_public_hostname: "{{ node.public_hostname | default(ec2_facts.instances[0].public_dns_name) }}"
+      openshift_node_labels: "{ 'type': {{ node.type | default('') }} }"
+      availability_zone: "{{ ec2_facts.instances[0].placement.zone }}"

@@ -1,0 +1,15 @@
+- name: Gather ec2 remote facts
+  ec2_remote_facts:
+    filters:
+      "tag:provision_id": "{{ provision_id }}"
+    region: "{{ ec2_region }}"
+  register: ec2_facts
+
+- name: destroy ec2 instances
+  ec2:
+    instance_ids: "{{ item.id }}"
+    state: absent
+    wait: yes
+    region: "{{ ec2_region }}"
+  with_items: "{{ ec2_facts.instances }}"
+  register: destroyed_instances

@@ -1,0 +1,61 @@
+- name: Provision Multi Node MBaaS
+  hosts: localhost
+  connection: local
+
+  vars:
+    ec2_key_name: "{{ key_pair }}"
+
+  roles:
+    - role: "provisioners/vpc"
+
+    - role: "provisioners/node"
+      masters:
+        master:
+          count: 3
+          size: m4.large
+      nodes:
+        infra:
+          count: 3
+          size: m4.large
+        mbaas:
+          count: 3
+          size: m4.large
+        compute:
+          count: 3
+          size: m4.large
+
+    - role: "provisioners/lb"
+      lbs:
+        - master
+        - infra
+
+    - role: "provisioners/dns"
+      records:
+        - name: "master."
+          lb: "{{ elbs.results[0].elb }}"
+        - name: ""
+          lb: "{{ elbs.results[1].elb }}"
+        - name: "*."
+          lb: "{{ elbs.results[1].elb }}"
+
+    - role: "provisioners/volume"
+      volumes:
+        - name: "{{ provision_id }}-mbaas1"
+          size: 50
+          zone: "{{ hostvars[groups.mbaas[0]].availability_zone }}"
+        - name: "{{ provision_id }}-mbaas2"
+          size: 50
+          zone: "{{ hostvars[groups.mbaas[1]].availability_zone }}"
+        - name: "{{ provision_id }}-mbaas3"
+          size: 50
+          zone: "{{ hostvars[groups.mbaas[2]].availability_zone }}"
+
+    - role: "inventory-creator"
+      name: "{{ provision_id }}"
+      callback: "{{ inventory_callback }}"
+      host_config_key: "{{ host_config_key | default(omit) }}"
+
+- name: Prepare new hosts for openshift installation
+  hosts: openshift
+  roles:
+    - openshift-host

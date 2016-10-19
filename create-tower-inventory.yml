@@ -1,0 +1,38 @@
+- name: Create Tower Inventory
+  hosts: localhost
+
+  tasks:
+    - name: generate uuid
+      command: uuidgen
+      register: uuid
+
+    - name: create tmp directory
+      file: "path=/tmp/{{ uuid.stdout }} state=directory"
+
+    - name: decode base64 contents
+      command: >
+        bash -c "echo {{ contents }} | base64 -d > /tmp/{{ uuid.stdout }}.tar.gz"
+      register: decoded
+
+    - name: unarchive file
+      command: >
+        tar -C /tmp/{{ uuid.stdout }} -xzvf /tmp/{{ uuid.stdout }}.tar.gz
+      args:
+        warn: no #ansible's unarchive module is too buggy
+
+    - name: create new inventory
+      command: >
+        tower-cli inventory create -n {{ name }} --organization {{ tower_org }}
+        -u {{ tower_user }} -p {{ tower_pass }} -f json
+      register: inventory_output
+
+    - name: import inventory
+      become: true
+      command: >
+        tower-manage inventory_import --source=/tmp/{{ uuid.stdout }} --inventory-name {{ name }}
+
+    - name: cleanup tmp directory
+      file: "path=/tmp/{{ uuid.stdout }} state=absent"
+
+    - name: cleanup tmp archive
+      file: "path=/tmp/{{ uuid.stdout }}.tar.gz state=absent"

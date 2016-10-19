@@ -1,0 +1,102 @@
+- name: create ec2 vpc
+  ec2_vpc:
+    state: present
+    cidr_block: 10.0.0.0/16
+    wait: yes
+    resource_tags:
+      Name: "{{ provision_id }}-vpc"
+      provision_id: "{{ provision_id }}"
+    region: "{{ ec2_region }}"
+    internet_gateway: true
+  register: ec2_vpc
+
+- name: create igw
+  ec2_vpc_igw:
+    state: present
+    vpc_id: "{{ ec2_vpc.vpc_id }}"
+    region: "{{ ec2_region }}"
+  register: igw
+
+- name: tag new igw
+  ec2_tag:
+    state: present
+    resource: "{{ igw.gateway_id }}"
+    region: "{{ ec2_region }}"
+    tags:
+      Name: "{{ provision_id }}-vpc-igw"
+      provision_id: "{{ provision_id }}"
+
+- name: create subnets for each availability zone
+  ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{ ec2_vpc.vpc_id }}"
+    cidr: "10.0.{{ item.1 }}.0/24"
+    az: "{{ ec2_region }}{{ item.0 }}"
+    resource_tags:
+      Name: "{{ provision_id }}-{{ ec2_region }}{{ item.0 }}-subnet"
+      provision_id: "{{ provision_id }}"
+    region: "{{ ec2_region }}"
+  with_together:
+    - ["a", "b", "c", "d", "e"]
+    - [0, 1, 2, 3, 4]
+  failed_when: False
+  register: subnets
+
+- set_fact:
+    available_subnets: "{{ subnets.results | selectattr('subnet', 'defined') | map(attribute='subnet') | list }}"
+
+- name: Set up public subnet route table
+  ec2_vpc_route_table:
+    vpc_id: "{{ ec2_vpc.vpc_id }}"
+    tags:
+      Name: Public
+    subnets: "{{ available_subnets | map(attribute='id') | list }}"
+    routes:
+      - dest: 0.0.0.0/0
+        gateway_id: "{{ igw.gateway_id }}"
+    region: "{{ ec2_region }}"
+  register: public_route_table
+
+- name: provision master security group
+  ec2_group:
+    state: present
+    name: "masters"
+    description: "Openshift Master Security Group"
+    vpc_id: "{{ ec2_vpc.vpc_id }}"
+    rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 8443
+        to_port: 8443
+        cidr_ip: 0.0.0.0/0
+    region: "{{ ec2_region }}"
+  register: ec2_group
+
+- name: provision node security group
+  ec2_group:
+    state: present
+    name: "nodes"
+    description: "Openshift Node Security Group"
+    vpc_id: "{{ ec2_vpc.vpc_id }}"
+    rules:
+      - proto: tcp
+        from_port: 22
+        to_port: 22
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 80
+        to_port: 80
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 443
+        to_port: 443
+        cidr_ip: 0.0.0.0/0
+      - proto: tcp
+        from_port: 10250
+        to_port: 10250
+        cidr_ip: 0.0.0.0/0
+    region: "{{ ec2_region }}"
+  register: ec2_group    

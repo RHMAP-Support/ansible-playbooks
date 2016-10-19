@@ -1,0 +1,13 @@
+- include: create.yml
+  vars:
+    node:
+      name: "{{ provision_id }}-{{ type.key }}{{ item }}"
+      type: "{{ type.key }}"
+
+      size: "{{ type.value.size | default(defaults.size | default('t2.micro')) }}"
+      groups: "{{ type.value.groups | default(defaults.groups | default(omit)) }}"      
+      schedulable: "{{ type.value.schedulable | default(defaults.schedulable | default(omit)) }}"
+      public_hostname: "{{ type.value.public_hostname | default(defaults.public_hostname | default(omit)) }}"
+
+      subnet: "{{ available_subnets[((item | int) - 1) % (available_subnets | length)] }}"
+  with_sequence: "count={{ type.value.count }}"

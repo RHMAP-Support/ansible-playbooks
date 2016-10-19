@@ -1,0 +1,9 @@
+- name: register with Red Hat Subscription Manager
+  become: yes
+  become_user: root
+  redhat_subscription: 
+    state: present
+    username: "{{ rh_user }}"
+    password: "{{ rh_pass }}"
+    autosubscribe: true
+  register: subscription

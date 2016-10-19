@@ -1,0 +1,34 @@
+- name: Provision Single Node MBaaS
+  hosts: localhost
+  connection: local
+
+  vars:
+    ec2_key_name: "{{ key_pair }}"
+
+  roles:
+    - role: "provisioners/vpc"
+    - role: "provisioners/node"
+      masters:
+        infra:
+          count: 1
+          size: m4.xlarge
+          schedulable: yes
+
+    - role: "provisioners/dns"
+      records:
+        - name: "master."
+          ip: "{{ hostvars[groups.masters[0]].public_ip_address }}"
+        - name: ""
+          ip: "{{ hostvars[groups.masters[0]].public_ip_address }}"
+        - name: "*."
+          ip: "{{ hostvars[groups.masters[0]].public_ip_address }}"
+
+    - role: "inventory-creator"
+      callback: "{{ inventory_callback }}"
+      host_config_key: "{{ host_config_key | default(omit) }}"
+      
+
+- name: Prepare new host for openshift installation
+  hosts: openshift
+  roles:
+    - openshift-host

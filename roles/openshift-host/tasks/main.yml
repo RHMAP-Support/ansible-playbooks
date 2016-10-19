@@ -1,0 +1,50 @@
+# Somteimes subscriptions fails but get stuck in an 'already registered' state
+# So we're going to try to unregister/register three times before giving up
+- block:
+    - include: subscribe.yml
+  rescue:
+    - block:
+      - include: unsubscribe.yml
+      - include: subscribe.yml
+      rescue:
+        - include: unsubscribe.yml
+        - include: subscribe.yml
+
+- name: enable openshift repos
+  become: yes
+  become_user: root
+  command: >
+    subscription-manager repos 
+    --disable "*"
+    --enable "rhel-7-server-rpms" 
+    --enable "rhel-7-server-extras-rpms" 
+    --enable "rhel-7-server-ose-{{ openshift_version | default('3.2') }}-rpms"
+    --enable "rhel-7-server-optional-rpms"
+  register: repos
+  until: repos | success
+  retries: 3
+  delay: 30
+
+- name: install packages
+  become: yes
+  become_user: root
+  yum: "name={{ item }} state=present"
+  with_items:
+   - wget
+   - git
+   - net-tools
+   - bind-utils
+   - iptables-services
+   - bridge-utils
+   - bash-completion
+   - subscription-manager-plugin-container
+
+- name: refresh local certificate store
+  become: yes
+  become_user: root
+  command: /usr/libexec/rhsmcertd-worker
+
+- name: disable requiretty to enable ansible ssh pipelining
+  become: yes
+  become_user: root
+  lineinfile: dest=/etc/sudoers state=absent regexp='^Defaults\s*requiretty' validate='visudo -cf %s'

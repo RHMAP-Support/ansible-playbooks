@@ -1,0 +1,27 @@
+- name: Destroy Provision
+  hosts: localhost
+  connection: local
+
+  vars:
+    provision_id: "{{ hostvars[groups.AWS[0]].provision_id }}"
+    ec2_region: "{{ hostvars[groups.AWS[0]].ec2_region }}"
+    dns_tld: "{{ hostvars[groups.AWS[0]].dns_tld }}"
+
+  roles:
+    - role: "destroyers/node"
+    - role: "destroyers/lb"
+    - role: "destroyers/dns"
+    - role: "destroyers/vpc"
+
+  tasks:
+    - name: fire callback
+      uri: 
+        url: "{{ inventory_callback }}"
+        method: "POST"
+        body: 
+          host_config_key: "{{ host_config_key | default(omit) }}"
+          extra_vars:
+            name: "{{ provision_id }}"
+        body_format: json
+        status_code: "200,201"
+      when: inventory_callback is defined

@@ -1,0 +1,18 @@
+- name: create ec2 volume
+  ec2_vol:
+    name: "{{ item.name }}"
+    volume_size: "{{ item.size }}"
+    zone: "{{ item.zone }}"
+    region: "{{ ec2_region }}"
+  with_items: "{{ volumes }}"
+  register: ec2_volumes
+
+- name: tag volumes
+  ec2_tag:
+    state: present
+    resource: "{{ item.volume.id }}"
+    tags:
+      provision_id: "{{ provision_id }}"
+    region:  "{{ ec2_region }}"
+  with_items: "{{ ec2_volumes.results }}"
+  

@@ -1,0 +1,4 @@
+---
+provision_id: "{{ provision_id }}"
+ec2_region: "{{ ec2_region }}"
+dns_tld: "{{ dns_tld }}"

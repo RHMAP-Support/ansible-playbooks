@@ -1,0 +1,8 @@
+---
+{% if item in groups.masters %}
+openshift_public_hostname: {{ hostvars[item].openshift_public_hostname | default(hostvars[item].public_dns_name) }}
+{% endif %}
+
+#Openshfit
+openshift_node_labels: {{ hostvars[item].openshift_node_labels }} 
+openshift_schedulable: {{ hostvars[item].openshift_schedulable | default('yes') }}

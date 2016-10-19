@@ -1,0 +1,21 @@
+# Create an OSEv3 group that contains the masters and nodes groups
+[OSEv3:children]
+masters
+nodes
+
+# host group for masters
+[masters]
+{% for host in groups['masters'] %}
+{{ hostvars[host].public_dns_name }}
+{% endfor %}
+
+# host group for nodes, includes region info
+[nodes]
+{% for host in groups['nodes'] %}
+{{ hostvars[host].public_dns_name }}
+{% endfor %}
+
+[AWS]
+{% for host in groups['nodes'] %}
+{{ hostvars[host].public_dns_name }}
+{% endfor %}

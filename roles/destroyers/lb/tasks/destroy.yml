@@ -1,0 +1,12 @@
+- name: Gather elb remote facts
+  ec2_elb_facts:
+    region: "{{ ec2_region }}"
+  register: elb_facts
+
+- name: destroy load balancers
+  ec2_elb_lb:
+    name: "{{ item.name }}"
+    state: absent
+    wait: yes
+    region: "{{ ec2_region }}"
+  with_items: "{{ elb_facts.elbs | selectattr('vpc_id', 'match', vpc.id) | list }}"

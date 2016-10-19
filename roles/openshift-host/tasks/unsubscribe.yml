@@ -1,0 +1,5 @@
+- name: unregister with Red Hat Subscription Manager
+  become: yes
+  become_user: root
+  redhat_subscription: 
+    state: absent

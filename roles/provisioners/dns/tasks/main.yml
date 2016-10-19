@@ -1,0 +1,57 @@
+- name: Ensure tld hosted zone exists
+  route53_zone: 
+    zone: "{{ dns_tld }}"
+    state: present
+  register: tld_zone
+
+- name: Create new hosted zone
+  route53_zone: 
+    zone: "{{ provision_id }}.{{ dns_tld }}"
+    state: present
+  register: provision_zone
+
+- name: Get the provisioned hosted zone records
+  route53_facts:
+    query: record_sets
+    hosted_zone_id: "{{ provision_zone.set.zone_id }}"
+  register: provision_records
+
+- name: create route53 NS record for provisioned hosted zone in tld hosted zone
+  route53:
+    command: create
+    zone: "{{ dns_tld }}"
+    record: "{{ provision_id }}.{{ dns_tld }}"
+    type: NS
+    ttl: "{{ ns_ttl | default(60) }}"
+    value: "{{ item.ResourceRecords | map(attribute='Value') | join(',') }}"
+    overwrite: yes
+    wait: yes
+  with_items: "{{ provision_records.ResourceRecordSets | selectattr('Type', 'match', 'NS') | list }}"
+
+- name: create route53 record for load balancer
+  route53:
+    command: create
+    zone: "{{ provision_id }}.{{ dns_tld }}"
+    record: "{{ item.name }}{{ provision_id }}.{{ dns_tld }}"
+    type: A
+    ttl: "{{ item.ttl | default(60) }}"
+    value: "{{ item.lb.dns_name }}"
+    overwrite: yes
+    wait: yes
+    alias: yes
+    alias_hosted_zone_id: "{{ item.lb.hosted_zone_id }}"
+  with_items: "{{ records | rejectattr('lb', 'undefined') | list }}"
+  register: dns_lb_records
+
+- name: create route53 record for ip address
+  route53:
+    command: create
+    zone: "{{ provision_id }}.{{ dns_tld }}"
+    record: "{{ item.name }}{{ provision_id }}.{{ dns_tld }}"
+    type: A
+    ttl: "{{ item.ttl | default(60) }}"
+    value: "{{ item.ip }}"
+    overwrite: yes
+    wait: yes
+  with_items: "{{ records | rejectattr('ip', 'undefined') | list }}"
+  register: dns_ip_records
