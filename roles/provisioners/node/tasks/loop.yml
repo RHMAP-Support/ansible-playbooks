@@ -5,7 +5,8 @@
       type: "{{ type.key }}"
 
       size: "{{ type.value.size | default(defaults.size | default('t2.micro')) }}"
-      groups: "{{ type.value.groups | default(defaults.groups | default(omit)) }}"      
+      groups: "{{ type.value.groups | default(defaults.groups | default(omit)) }}"
+      security_groups: "{{ type.value.security_groups | default(defaults.security_groups | default(omit)) }}"
       schedulable: "{{ type.value.schedulable | default(defaults.schedulable | default(omit)) }}"
       public_hostname: "{{ type.value.public_hostname | default(defaults.public_hostname | default(omit)) }}"
 

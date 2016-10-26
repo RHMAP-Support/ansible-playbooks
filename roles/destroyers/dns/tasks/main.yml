@@ -29,25 +29,32 @@
     command: delete
     zone: "{{ dns_tld }}"
     type: NS
-    ttl: "{{ item.TTL }}"
+    ttl: "{{ item.TTL | default(omit) }}"
     record: "{{ item.Name }}"
     value: "{{ item.ResourceRecords | map(attribute='Value') | join(',') }}"
-  with_items: "{{ tld_records.ResourceRecordSets }}"
-  when: item.Name == (provision_id + '.' + dns_tld + '.')
+  with_items: "{{ tld_records.ResourceRecordSets | selectattr('Name', 'match', provision_id + '.' + dns_tld + '.') | list }}"
 
 - name: delete all records for provisioned hosted zone
   route53:
     command: delete
     zone: "{{ provision_id }}.{{ dns_tld }}"
     type: "{{ item.Type }}"
-    ttl: "{{ item.TTL }}"
+    ttl: "{{ item.TTL | default(omit) }}"
     record: "{{ item.Name | regex_replace('\\\\052', '*') }}"
     value: "{{ item.ResourceRecords | map(attribute='Value') | join(',') }}"
-  with_items: "{{ provisioned_records.ResourceRecordSets | default([]) }}"
-  when: 
-    - item is defined
-    - item.Type != 'NS' 
-    - item.Type != 'SOA'
+  with_items: "{{ provisioned_records.ResourceRecordSets | default([]) | rejectattr('Type', 'match', 'NS') | rejectattr('Type', 'match', 'SOA') | selectattr('AliasTarget', 'undefined') | list }}"
+
+- name: delete all alias records for provisioned hosted zone
+  route53:
+    command: delete 
+    zone: "{{ provision_id }}.{{ dns_tld }}"
+    type: "{{ item.Type }}"
+    ttl: "{{ item.TTL | default(omit) }}"
+    record: "{{ item.Name | regex_replace('\\\\052', '*') }}"
+    value: "{{ item.AliasTarget.DNSName }}"
+    alias: yes
+    alias_hosted_zone_id: "{{ item.AliasTarget.HostedZoneId }}"
+  with_items: "{{ provisioned_records.ResourceRecordSets | default([]) | rejectattr('Type', 'match', 'NS') | rejectattr('Type', 'match', 'SOA') | rejectattr('AliasTarget', 'undefined') | list }}"
 
 - name: destroy provisioned hosted zone
   route53_zone: 

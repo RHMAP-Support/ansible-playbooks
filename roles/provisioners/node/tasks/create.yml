@@ -4,7 +4,7 @@
       key_name: "{{ ec2_key_name }}"
       instance_type: "{{ node.size }}"
       image: "{{ ami_find.results[0].ami_id }}"
-      group: "{{ node.groups }}"
+      group: "{{ node.security_groups }}"
       vpc_subnet_id: "{{ node.subnet.id }}"
       volumes:
         - device_name: /dev/sda1

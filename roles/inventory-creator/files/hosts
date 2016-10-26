@@ -9,7 +9,12 @@ nodes
 {{ hostvars[host].public_dns_name }}
 {% endfor %}
 
-# host group for nodes, includes region info
+[etcd]
+{% for host in groups['etcd'] %}
+{{ hostvars[host].public_dns_name }}
+{% endfor %}
+
+# host group for nodes
 [nodes]
 {% for host in groups['nodes'] %}
 {{ hostvars[host].public_dns_name }}

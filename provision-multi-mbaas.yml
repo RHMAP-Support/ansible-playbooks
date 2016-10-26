@@ -11,7 +11,7 @@
     - role: "provisioners/node"
       masters:
         master:
-          count: 3
+          count: 1
           size: m4.large
       nodes:
         infra:
