@@ -26,17 +26,16 @@
 
     - role: "provisioners/lb"
       lbs:
-        - master
         - infra
 
     - role: "provisioners/dns"
       records:
         - name: "master."
-          lb: "{{ elbs.results[0].elb }}"
+          ip: "{{ hostvars[groups.masters[0]].public_ip_address }}"
         - name: ""
-          lb: "{{ elbs.results[1].elb }}"
+          lb: "{{ elbs.results[0].elb }}"
         - name: "*."
-          lb: "{{ elbs.results[1].elb }}"
+          lb: "{{ elbs.results[0].elb }}"
 
     - role: "provisioners/volume"
       volumes:
