@@ -4,10 +4,8 @@
     - include: subscribe.yml
   rescue:
     - block:
-      - include: unsubscribe.yml
       - include: subscribe.yml
       rescue:
-        - include: unsubscribe.yml
         - include: subscribe.yml
 
 - name: enable openshift repos
@@ -38,6 +36,12 @@
    - bridge-utils
    - bash-completion
    - subscription-manager-plugin-container
+
+- name: install docker
+  become: yes
+  become_user: root
+  yum: "name=docker-{{ docker_version }} state=present"
+  when: docker_version is defined
 
 - name: refresh local certificate store
   become: yes

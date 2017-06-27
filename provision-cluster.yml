@@ -1,4 +1,4 @@
-- name: Provision Multi Node MBaaS
+- name: Provision Multi Node Cluster
   hosts: localhost
   connection: local
 
@@ -15,13 +15,13 @@
           size: m4.large
       nodes:
         infra:
-          count: 3
+          count: "{{ infra_count | default(3) }}"
           size: m4.large
         mbaas:
-          count: 3
+          count: "{{ mbaas_count | default(3) }}"
           size: m4.large
         compute:
-          count: 3
+          count: "{{ compute_count | default(3) }}"
           size: m4.large
 
     - role: "provisioners/lb"
@@ -37,17 +37,17 @@
         - name: "*."
           lb: "{{ elbs.results[0].elb }}"
 
-    - role: "provisioners/volume"
-      volumes:
-        - name: "{{ provision_id }}-mbaas1"
-          size: 50
-          zone: "{{ hostvars[groups.mbaas[0]].availability_zone }}"
-        - name: "{{ provision_id }}-mbaas2"
-          size: 50
-          zone: "{{ hostvars[groups.mbaas[1]].availability_zone }}"
-        - name: "{{ provision_id }}-mbaas3"
-          size: 50
-          zone: "{{ hostvars[groups.mbaas[2]].availability_zone }}"
+    # - role: "provisioners/volume"
+    #   volumes:
+    #     - name: "{{ provision_id }}-mbaas1"
+    #       size: 50
+    #       zone: "{{ hostvars[groups.mbaas[0]].availability_zone }}"
+    #     - name: "{{ provision_id }}-mbaas2"
+    #       size: 50
+    #       zone: "{{ hostvars[groups.mbaas[1]].availability_zone }}"
+    #     - name: "{{ provision_id }}-mbaas3"
+    #       size: 50
+    #       zone: "{{ hostvars[groups.mbaas[2]].availability_zone }}"
 
     - role: "inventory-creator"
       name: "{{ provision_id }}"

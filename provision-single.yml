@@ -1,4 +1,4 @@
-- name: Provision Single Node MBaaS
+- name: Provision Single Node
   hosts: localhost
   connection: local
 

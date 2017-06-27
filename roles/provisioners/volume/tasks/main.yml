@@ -1,5 +1,6 @@
 - name: create ec2 volume
-  ec2_vol:
+  local_action: ec2_vol
+  args:
     name: "{{ item.name }}"
     volume_size: "{{ item.size }}"
     zone: "{{ item.zone }}"
@@ -8,7 +9,8 @@
   register: ec2_volumes
 
 - name: tag volumes
-  ec2_tag:
+  local_action: ec2_tag
+  args:
     state: present
     resource: "{{ item.volume.id }}"
     tags:
