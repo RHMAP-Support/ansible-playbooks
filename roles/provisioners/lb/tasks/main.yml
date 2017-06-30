@@ -7,6 +7,9 @@
     purge_listeners: yes
     subnets: "{{ groups[item] | map('extract', hostvars) | map(attribute='subnet_id') | list }}" 
     instance_ids: "{{ groups[item] | map('extract', hostvars) | map(attribute='id') | list }}"
+    security_group_names: 
+      - masters
+      - nodes
     listeners:
       - protocol: tcp
         load_balancer_port: 80

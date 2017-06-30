@@ -18,6 +18,7 @@
     --enable "rhel-7-server-extras-rpms" 
     --enable "rhel-7-server-ose-{{ openshift_version | default('3.2') }}-rpms"
     --enable "rhel-7-server-optional-rpms"
+    --enable="rhel-7-fast-datapath-rpms"
   register: repos
   until: repos | success
   retries: 3

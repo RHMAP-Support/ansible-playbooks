@@ -15,3 +15,5 @@ openshift_hosted_router_selector: 'type=infra'
 openshift_cloudprovider_kind: aws
 openshift_cloudprovider_aws_access_key: {{ ansible_env['AWS_ACCESS_KEY'] }}
 openshift_cloudprovider_aws_secret_key: {{ ansible_env['AWS_SECRET_KEY'] }}
+
+openshift_master_default_subdomain: 'cloudapps.{{ provision_id }}.{{ dns_tld }}'

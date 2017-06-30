@@ -17,6 +17,7 @@
         - nodes
         - etcd
       security_groups:
+        - default
         - masters
         - nodes
       schedulable: no
@@ -31,6 +32,7 @@
       groups:
         - nodes
       security_groups:
+        - default
         - nodes
   with_dict: "{{ nodes | default({}) }}"
   loop_control:
