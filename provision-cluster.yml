@@ -12,17 +12,17 @@
       masters:
         master:
           count: 1
-          size: m4.large
+          size: m4.2xlarge
       nodes:
         infra:
           count: "{{ infra_count | default(3) }}"
-          size: m4.large
+          size: m4.2xlarge
         mbaas:
           count: "{{ mbaas_count | default(3) }}"
-          size: m4.large
+          size: m4.2xlarge
         compute:
           count: "{{ compute_count | default(3) }}"
-          size: m4.large
+          size: m4.2xlarge
 
     - role: "provisioners/lb"
       lbs:
